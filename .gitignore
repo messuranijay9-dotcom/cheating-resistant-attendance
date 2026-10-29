@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Local Environment Variables
+.env
+
+# SQLite Database Data & WAL Files
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS & System Logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

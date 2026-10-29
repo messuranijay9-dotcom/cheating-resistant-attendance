@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AntiCheat Attendance // Multi-Layer Security System</title>
+  <meta name="description" content="Multi-layer cheating-resistant attendance verification system featuring rotating dynamic QR nonces, face biometric authentication, and temporal sequence enforcement.">
+
+  <!-- Kinetic Typography & Styling -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+
+  <!-- Core Real-Time & Vision Libraries -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+</head>
+<body>
+
+  <!-- ====================== TOP BAR NAVIGATION ====================== -->
+  <nav class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#">
+        ANTI<span>C</span>HEAT
+        <span class="brand-badge">SDTT 1.0</span>
+      </a>
+
+      <!-- Guest Navigation -->
+      <div id="nav-guest-links" class="nav-links">
+        <button class="nav-link-btn" onclick="switchAuthTab('login')">01 / SIGN IN</button>
+        <button class="nav-link-btn" onclick="switchAuthTab('register')">02 / REGISTER</button>
+      </div>
+
+      <!-- Professor Navigation -->
+      <div id="nav-prof-links" class="nav-links hidden">
+        <a href="#prof-overview-card" class="nav-link-btn">OVERVIEW</a>
+        <a href="#prof-start-session-panel" class="nav-link-btn">SESSION SETUP</a>
+        <a href="#prof-active-session-panel" class="nav-link-btn">LIVE ATTENDEES</a>
+        <button id="btn-nav-projector" class="nav-link-btn highlight">📺 PROJECTOR HUD</button>
+      </div>
+
+      <!-- Student Navigation -->
+      <div id="nav-student-links" class="nav-links hidden">
+        <a href="#student-face-card" class="nav-link-btn">BIOMETRICS</a>
+        <a href="#student-active-session-card" class="nav-link-btn">ATTENDANCE</a>
+        <a href="#student-courses-card" class="nav-link-btn">MY COURSES</a>
+        <a href="#student-history-card" class="nav-link-btn">HISTORY</a>
+      </div>
+
+      <!-- User Profile & Logout -->
+      <div id="user-info-nav" class="user-nav-controls hidden">
+        <div class="user-info">
+          <strong id="user-name-display">User</strong>
+          <span id="user-role-display" class="user-role-badge">Role</span>
+        </div>
+        <button id="btn-logout" class="btn btn-secondary btn-sm nav-logout-btn">LOGOUT</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====================== SYSTEM HERO BANNER ====================== -->
+  <header class="system-hero">
+    <div class="hero-content">
+      <div class="hero-badge">SDTT SECURITY ARCHITECTURE // VANGUARD PROTOCOL</div>
+      <h1 class="hero-title">ANTI<b>C</b>HEAT</h1>
+      <p class="hero-subtitle">
+        Multi-layer Cheating-Resistant Attendance System engineered with dynamic rotating QR nonces, face biometric authentication, and strict temporal sequence validation.
+      </p>
+      <div class="system-status-pills">
+        <span class="status-pill"><span class="pill-dot green"></span> System Status: Online</span>
+        <span class="status-pill"><span class="pill-dot yellow"></span> Biometrics: 68-Point Mesh</span>
+        <span class="status-pill"><span class="pill-dot orange"></span> QR Nonce: Dynamic 3-Stage Gate</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====================== MAIN APPLICATION CONTAINER ====================== -->
+  <main class="container" id="app-container">
+
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <!-- 1. AUTHENTICATION VIEW (Guest)                                            -->
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <section id="auth-view" class="auth-wrapper">
+      <div class="glass-card">
+        <div class="card-header-center">
+          <span class="mono-label">Authentication Console</span>
+          <h2>SYSTEM ACCESS</h2>
+          <p class="card-subtitle">
+            Secure multi-factor portal access for professors and students
+          </p>
+        </div>
+
+        <div class="auth-tabs">
+          <button type="button" id="tab-login" class="auth-tab active">01 / Sign In</button>
+          <button type="button" id="tab-register" class="auth-tab">02 / Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email Address</label>
+            <input type="email" id="login-email" class="form-control" placeholder="user@university.edu" required value="prof@university.edu">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-control" placeholder="••••••••" required value="password123">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Authenticate Access →</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="hidden">
+          <div class="form-group">
+            <label class="form-label" for="reg-name">Full Name</label>
+            <input type="text" id="reg-name" class="form-control" placeholder="Jane Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-email">Email Address</label>
+            <input type="email" id="reg-email" class="form-control" placeholder="jane@university.edu" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-password">Password</label>
+            <input type="password" id="reg-password" class="form-control" placeholder="••••••••" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-role">Account Role</label>
+            <select id="reg-role" class="form-control" required>
+              <option value="STUDENT">Student</option>
+              <option value="PROFESSOR">Professor</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-success btn-block">Create Account →</button>
+        </form>
+
+        <!-- Quick 1-Click Demo Accounts -->
+        <div class="demo-accounts-panel">
+          <div class="demo-label">⚡ 1-Click Demo Login Accounts:</div>
+          <div class="demo-buttons">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="quickLogin('prof@university.edu', 'password123')">Prof Turing</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="quickLogin('student1@university.edu', 'password123')">Student Alice</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="quickLogin('student2@university.edu', 'password123')">Student Bob</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="quickLogin('student3@university.edu', 'password123')">Student Charlie</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <!-- 2. PROFESSOR DASHBOARD VIEW                                               -->
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <section id="professor-view" class="hidden">
+      
+      <!-- Top Title & Controls -->
+      <div class="view-header">
+        <div>
+          <span class="mono-label">Professor Console // Control Node</span>
+          <h2 class="view-title">LECTURE &amp; ATTENDANCE HUB</h2>
+        </div>
+        <div class="view-actions">
+          <button id="btn-create-course" class="btn btn-primary btn-sm">➕ Create Course</button>
+          <button id="btn-export-csv" class="btn btn-secondary btn-sm">📊 Export CSV</button>
+        </div>
+      </div>
+
+      <!-- KPI Overview Cards -->
+      <div id="prof-overview-card" class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Courses Under Instruction</div>
+          <div id="prof-stat-courses" class="kpi-value">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Current Session State</div>
+          <div id="prof-stat-session" class="kpi-value">IDLE</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Live Attendees Checked In</div>
+          <div id="prof-stat-attendees" class="kpi-value">0 / 0</div>
+        </div>
+      </div>
+
+      <!-- Start Session Panel -->
+      <div id="prof-start-session-panel" class="glass-card">
+        <div class="card-title">
+          <span>🚀 INITIALIZE ATTENDANCE SESSION</span>
+        </div>
+        <p class="card-description">
+          Select an instructed course and timeout interval to broadcast a cryptographic multi-stage QR verification session to students.
+        </p>
+
+        <div class="session-form-grid">
+          <div class="form-group">
+            <label class="form-label" for="prof-course-select">Select Course</label>
+            <select id="prof-course-select" class="form-control">
+              <option value="">Loading courses...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prof-timeout-select">Session Timeout Window</label>
+            <select id="prof-timeout-select" class="form-control">
+              <option value="180" selected>3 Minutes (Recommended)</option>
+              <option value="120">2 Minutes (Rapid Check)</option>
+              <option value="300">5 Minutes (Auditorium Mode)</option>
+            </select>
+          </div>
+          <div class="form-group" style="align-self: end;">
+            <button id="btn-start-session" class="btn btn-primary btn-lg btn-block">
+              🚀 Start Session
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Session Status Panel -->
+      <div id="prof-active-session-panel" class="glass-card hidden">
+        <div class="active-session-banner">
+          <div>
+            <h3 id="active-course-title" class="active-course-heading">SDTT101 - Software Design</h3>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+              <span id="active-stage-indicator" class="brand-badge">Stage 1 of 3</span>
+              <span class="timer-badge">Remaining: <span id="active-session-timer">03:00</span></span>
+            </div>
+          </div>
+          <div class="active-session-controls">
+            <button id="btn-open-projector" class="btn btn-primary">📺 Open Projector</button>
+            <button id="btn-next-stage" class="btn btn-success">➡️ Next QR Stage</button>
+            <button id="btn-end-session" class="btn btn-danger">🛑 End Session</button>
+          </div>
+        </div>
+
+        <!-- Metric Highlight -->
+        <div class="metric-highlight-bar">
+          <div>
+            <div class="metric-label">Verified Present Students</div>
+            <div id="active-attendees-count" class="metric-number">0</div>
+          </div>
+          <div style="text-align: right;">
+            <div class="metric-label">Anti-Cheat Enforcement</div>
+            <div class="metric-status">🔒 Strict Temporal Sequence (1→2→3)</div>
+          </div>
+        </div>
+
+        <!-- Live Attendee Table & Filters -->
+        <div class="table-header-toolbar">
+          <h4 class="table-heading">REAL-TIME ATTENDANCE LOG</h4>
+          <div class="table-filters">
+            <input type="text" id="prof-search-input" class="form-control filter-search" placeholder="🔍 Search student name or email...">
+            <select id="prof-status-filter" class="form-control filter-select">
+              <option value="ALL">All Statuses</option>
+              <option value="PRESENT">Present Only</option>
+              <option value="ABSENT">Absent Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Student Name</th>
+                <th>Email</th>
+                <th>Attendance Status</th>
+                <th>Completion Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="attendees-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <!-- 3. STUDENT DASHBOARD VIEW                                                 -->
+    <!-- ───────────────────────────────────────────────────────────────────────── -->
+    <section id="student-view" class="hidden">
+      
+      <div class="view-header">
+        <div>
+          <span class="mono-label">Student Portal // Verification Terminal</span>
+          <h2 class="view-title">MY ATTENDANCE &amp; COURSES</h2>
+        </div>
+      </div>
+
+      <!-- Biometric Face Status Card -->
+      <div id="student-face-card" class="glass-card face-banner-card">
+        <div class="face-banner-inner">
+          <div id="face-status-banner">
+            <span style="color:var(--text-muted); font-size:0.85rem;">⏳ Loading facial biometric status…</span>
+          </div>
+          <button id="btn-open-enroll-modal" class="btn btn-primary btn-sm hidden">
+            🎭 Enroll My Face (One-Time Setup)
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Course Session Card -->
+      <div id="student-active-session-card" class="glass-card hidden">
+        <div class="active-session-header">
+          <div>
+            <span class="mono-label">Active Attendance Call</span>
+            <h3 id="student-session-course-title" class="active-course-heading">Active Course Session</h3>
+          </div>
+          <div class="security-notice">🔒 Multi-Stage Protocol Active</div>
+        </div>
+
+        <p class="card-description">
+          You must verify your face, then scan all 3 consecutive QR codes displayed on the lecture screen in order without switching applications.
+        </p>
+
+        <!-- Step 1: Face Verification Panel -->
+        <div id="face-verify-panel" class="face-verify-panel hidden">
+          <div class="step-badge">STEP 1 OF 2</div>
+          <h4 style="margin: 0.5rem 0; color: var(--accent-2); font-size: 1.15rem;">🔐 Verify Your Face Biometrics</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+            Align your face with the camera and click Verify. Required once per attendance attempt.
+          </p>
+
+          <div id="face-verify-status"></div>
+          <video id="verify-video" autoplay muted playsinline class="face-video hidden"></video>
+
+          <div class="verify-controls">
+            <button id="btn-start-verify-camera" class="btn btn-secondary">📷 Open Camera</button>
+            <button id="btn-verify-face" class="btn btn-primary hidden">🔍 Verify Face</button>
+            <button id="btn-test-biometrics-verify" class="btn btn-secondary btn-sm" title="Simulated verification for testing without webcam">🧪 Test Biometrics</button>
+          </div>
+        </div>
+
+        <!-- Step 2: Attendance Attempt Trigger -->
+        <div id="student-session-status" style="margin-top: 1rem;">
+          <button id="btn-start-attempt" class="btn btn-primary btn-lg btn-block">
+            📷 Start Attendance Attempt
+          </button>
+        </div>
+
+        <!-- QR Scanner Area -->
+        <div id="student-scanner-area" class="hidden scanner-box">
+          
+          <!-- 3-Stage Progress Tracker -->
+          <div class="step-tracker">
+            <div id="step-indicator-1" class="step-item">
+              <div class="step-circle">1</div>
+              <div class="step-label">QR 1</div>
+            </div>
+            <div id="step-indicator-2" class="step-item">
+              <div class="step-circle">2</div>
+              <div class="step-label">QR 2</div>
+            </div>
+            <div id="step-indicator-3" class="step-item">
+              <div class="step-circle">3</div>
+              <div class="step-label">QR 3</div>
+            </div>
+          </div>
+
+          <div id="attempt-timer-display" class="attempt-timer">
+            Attempt Expires In: --:--
+          </div>
+
+          <div id="current-step-instructions" class="target-instructions">
+            Target: Scan QR Code Stage 1 of 3
+          </div>
+
+          <!-- Camera Stream Container -->
+          <div id="qr-reader"></div>
+
+          <!-- Mobile Snap Photo & File Fallback -->
+          <div class="scanner-fallbacks">
+            <input type="file" id="qr-file-input" accept="image/*" capture="environment" style="display:none">
+            <button id="btn-snap-photo" class="btn btn-secondary btn-block">
+              📸 Snap Photo / Upload Image of QR
+            </button>
+          </div>
+
+          <!-- Manual QR Code Input (Testing / Fallback) -->
+          <div class="manual-scan-box">
+            <div class="manual-scan-label">💻 DESKTOP &amp; TESTING INPUT (PASTE QR PAYLOAD OR RAW TOKEN):</div>
+            <div class="manual-scan-row">
+              <input type="text" id="manual-qr-input" class="form-control" placeholder='Paste QR JSON or token string'>
+              <button id="btn-manual-scan-submit" class="btn btn-secondary">Submit Scan</button>
+              <button id="btn-quick-test-scan" class="btn btn-secondary btn-sm" title="Load active stage token automatically">⚡ Auto-Fill Token</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enrolled Courses Card -->
+      <div id="student-courses-card" class="glass-card">
+        <div class="card-title">
+          <span>📚 AVAILABLE &amp; ENROLLED COURSES</span>
+        </div>
+        <p class="card-description">
+          Manage your course enrollments to receive live lecture attendance broadcast sessions.
+        </p>
+        <div id="student-courses-list"></div>
+      </div>
+
+      <!-- Attendance History Card -->
+      <div id="student-history-card" class="glass-card">
+        <div class="table-header-toolbar">
+          <div class="card-title" style="margin-bottom:0; border:none; padding:0;">
+            <span>📋 MY ATTENDANCE VERIFICATION LOG</span>
+          </div>
+          <div class="table-filters">
+            <input type="text" id="student-history-search" class="form-control filter-search" placeholder="🔍 Search course...">
+            <select id="student-history-status-filter" class="form-control filter-select">
+              <option value="ALL">All Statuses</option>
+              <option value="PRESENT">Present Only</option>
+              <option value="ABSENT">Absent Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 1rem;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Course Code &amp; Title</th>
+                <th>Timestamp</th>
+                <th>Verification Status</th>
+              </tr>
+            </thead>
+            <tbody id="student-history-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================== PROJECTOR MODE FULLSCREEN OVERLAY ====================== -->
+  <div id="projector-modal" class="projector-container hidden" role="dialog" aria-modal="true" aria-label="Auditorium Projector Display">
+    <div class="projector-header">
+      <div id="projector-course-code" class="projector-course">SDTT101</div>
+      <div id="projector-stage-title" class="projector-stage-badge">STAGE 1 OF 3</div>
+    </div>
+
+    <div class="projector-qr-wrapper">
+      <img id="projector-qr-img" src="" alt="Session Dynamic QR Code">
+    </div>
+
+    <div class="projector-instructions">
+      Scan with your device in order: <strong>QR 1 → QR 2 → QR 3</strong><br>
+      Do not background application or switch tabs during attendance verification.
+    </div>
+
+    <div id="projector-timer-display" class="projector-timer">
+      Time Remaining: 03:00
+    </div>
+
+    <div class="projector-attendee-counter">
+      STUDENTS CHECKED IN: <span id="projector-attendees-count">0</span>
+    </div>
+
+    <div class="projector-controls">
+      <button id="btn-proj-next-stage" class="btn btn-success btn-lg">➡️ Advance to Next Stage</button>
+      <button id="btn-proj-end-session" class="btn btn-danger btn-lg">🛑 End Session</button>
+      <button id="btn-close-projector" class="btn btn-secondary btn-lg">✖ Close Projector View</button>
+    </div>
+  </div>
+
+  <!-- ====================== FACE ENROLLMENT MODAL OVERLAY ====================== -->
+  <div id="face-enroll-modal" class="face-modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Face Biometric Enrollment">
+    <div class="face-modal-card">
+      <div class="modal-card-header">
+        <h3>🎭 FACE BIOMETRIC ENROLLMENT</h3>
+        <button id="btn-close-enroll-modal" class="btn btn-secondary btn-sm" aria-label="Close modal">✕</button>
+      </div>
+      <p class="card-description">
+        This is a <strong>one-time setup</strong>. Your facial biometric vector will be securely stored to verify physical presence before every attendance attempt.
+      </p>
+      <video id="enroll-video" autoplay muted playsinline class="face-video"></video>
+      <div class="modal-actions" style="margin-top: 1.2rem; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button id="btn-capture-enroll" class="btn btn-primary" style="flex: 1;">
+          📸 Capture &amp; Enroll Face
+        </button>
+        <button id="btn-test-biometrics-enroll" class="btn btn-secondary" title="Simulated enrollment for testing without webcam">
+          🧪 Test Biometrics
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== CREATE COURSE MODAL OVERLAY ====================== -->
+  <div id="course-create-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Create New Course">
+    <div class="modal-card">
+      <div class="modal-card-header">
+        <h3>➕ CREATE NEW COURSE</h3>
+        <button id="btn-close-course-modal" class="btn btn-secondary btn-sm" aria-label="Close modal">✕</button>
+      </div>
+      <p class="card-description">
+        Add a new course curriculum. Enrolled students will automatically be registered to join attendance sessions.
+      </p>
+      <form id="course-create-form">
+        <div class="form-group">
+          <label class="form-label" for="new-course-code">Course Code</label>
+          <input type="text" id="new-course-code" class="form-control" placeholder="e.g. SDTT201" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new-course-name">Course Title</label>
+          <input type="text" id="new-course-name" class="form-control" placeholder="e.g. Distributed Security Protocols" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="btn-cancel-course-modal" class="btn btn-secondary">Cancel</button>
+          <button type="submit" id="btn-submit-course" class="btn btn-primary">Create Course →</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Stack -->
+  <div id="toast-container"></div>
+
+  <!-- ====================== CLEAN ATTENDANCE FOOTER ====================== -->
+  <footer class="system-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        ANTI<span>C</span>HEAT ATTENDANCE SYSTEM
+      </div>
+      <div class="footer-meta">
+        SDTT Architecture // Sequential 3-Stage Verification Engine
+      </div>
+      <div class="footer-copy">
+        Protected against proxy sign-ins, photo sharing, and device spoofing.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Application Scripts -->
+  <script src="/js/app.js"></script>
+  <script src="/js/face.js"></script>
+  <script src="/js/professor.js"></script>
+  <script src="/js/student.js"></script>
+
+</body>
+</html>

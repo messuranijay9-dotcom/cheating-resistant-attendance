@@ -1,0 +1,31 @@
+{
+  "name": "cheating-resistant-attendance",
+  "version": "1.0.0",
+  "description": "Multi-layer Cheating-Resistant Attendance Management System for SDTT",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node src/db/seed.js",
+    "test": "node --test --test-concurrency=1 tests/**/*.test.js"
+  },
+  "keywords": [
+    "attendance",
+    "qr-code",
+    "security",
+    "sdtt",
+    "express",
+    "sqlite"
+  ],
+  "author": "SDTT Project Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}
